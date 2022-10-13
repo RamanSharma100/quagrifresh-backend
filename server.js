@@ -24,10 +24,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// add error handler
-app.use((err, req, res, next) => {
-  res.status(500).json({ message: err.message });
-});
+app.use("/api", require("./apis/index"));
 
 // add port
 const PORT = process.env.PORT || 5000;
