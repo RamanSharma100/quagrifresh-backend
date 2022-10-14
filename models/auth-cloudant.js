@@ -1,74 +1,95 @@
 const dbCloudantConnect = require("../utils/dbCloudant");
+const credentials = require("../config/vcap-local.json");
+const { CloudantV1, IamAuthenticator } = require("@ibm-cloud/cloudant");
+function getAllDocuments() {
+  const client = new CloudantV1({
+    authenticator: new IamAuthenticator({
+      apikey: credentials.services.cloudantNoSQLDB.credentials.apikey,
+    }),
+    serviceUrl: credentials.services.cloudantNoSQLDB.credentials.url,
+  });
 
-let db;
+  return new Promise((resolve, reject) => {
+    client
+      .postAllDocs({
+        db: "quagrifresh_auth",
+        includeDocs: true,
+      })
+      .then((response) => {
+        resolve(response.result);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+const findById = async (id) => {
+  const allDocuments = await getAllDocuments();
 
-// Initialize the DB when this module is loaded
-function getDbConnection() {
-  console.info(
-    "Initializing Cloudant connection...",
-    "items-cloudant.getDbConnection()"
-  );
-  dbCloudantConnect("quagrifresh_auth")
-    .then((database) => {
-      console.info(
-        "Cloudant connection initialized.",
-        "items-cloudant.getDbConnection()"
-      );
-      db = database;
-    })
-    .catch((err) => {
-      console.error(
-        "Error while initializing DB: " + err.message,
-        "items-cloudant.getDbConnection()"
-      );
-      throw err;
+  const document = allDocuments.rows.find((row) => row.doc._id === id);
+
+  return document;
+};
+
+const findByEmail = async (email) => {
+  const allDocuments = await getAllDocuments();
+
+  const document = allDocuments.rows.find((row) => row.doc.email === email);
+
+  return document;
+};
+
+function createDocument(document) {
+  return new Promise((resolve, reject) => {
+    const client = new CloudantV1({
+      authenticator: new IamAuthenticator({
+        apikey: credentials.services.cloudantNoSQLDB.credentials.apikey,
+      }),
+      serviceUrl: credentials.services.cloudantNoSQLDB.credentials.url,
     });
+
+    client
+      .postDocument({
+        db: "quagrifresh_auth",
+        document: document,
+      })
+      .then((response) => {
+        resolve(response.result);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
 }
 
-const findById = (id) => {
+function updateDocument(document) {
   return new Promise((resolve, reject) => {
-    db.get(id, (err, document) => {
-      if (err) {
-        if (err.message == "missing") {
-          console.warn(`Document id ${id} does not exist.`, "findById()");
-          resolve({ data: {}, statusCode: 404 });
-        } else {
-          console.error("Error occurred: " + err.message, "findById()");
-          reject(err);
-        }
-      } else {
-        resolve({ data: document, statusCode: 200 });
-      }
+    const client = new CloudantV1({
+      authenticator: new IamAuthenticator({
+        apikey: credentials.services.cloudantNoSQLDB.credentials.apikey,
+      }),
+      serviceUrl: credentials.services.cloudantNoSQLDB.credentials.url,
     });
-  });
-};
 
-const findByEmail = (email) => {
-  return new Promise((resolve, reject) => {
-    db.find(
-      {
-        selector: {
-          email: email,
-        },
-      },
-      (err, result) => {
-        if (err) {
-          console.error("Error occurred: " + err.message, "findByEmail()");
-          reject(err);
-        } else {
-          if (result.docs.length > 0) {
-            resolve({ data: result.docs[0], statusCode: 200 });
-          } else {
-            resolve({ data: {}, statusCode: 404 });
-          }
-        }
-      }
-    );
+    client
+      .putDocument({
+        db: "quagrifresh_auth",
+        docId: document._id,
+        document: document,
+      })
+      .then((response) => {
+        resolve(response.result);
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
-};
+}
 
 module.exports = {
-  getDbConnection,
+  getAllDocuments,
   findById,
   findByEmail,
+  createDocument,
+  updateDocument,
 };

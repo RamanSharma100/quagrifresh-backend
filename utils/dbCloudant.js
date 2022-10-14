@@ -1,5 +1,3 @@
-const Cloudant = require("@cloudant/cloudant");
-
 const vcap = require("../config/vcap-local.json");
 
 const dbCloudantConnect = (database_name) => {
