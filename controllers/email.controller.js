@@ -4,6 +4,11 @@ const { sendMail } = require("../helpers/mail.helper");
 
 const verifyEmail = async (req, res) => {
   const { token } = req.params;
+
+  if (!token) {
+    return res.status(400).json({ message: "Token not present!" });
+  }
+
   const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
   const { email } = decoded;
   const user = await findByEmail(email);
@@ -35,6 +40,11 @@ const verifyEmail = async (req, res) => {
 
 const resendVerificationEmail = async (req, res) => {
   const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email not present!" });
+  }
+
   const user = await findByEmail(email);
 
   if (user) {
@@ -60,6 +70,11 @@ const resendVerificationEmail = async (req, res) => {
 
 const sendResetPasswordEmail = async (req, res) => {
   const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email not present!" });
+  }
+
   const user = await findByEmail(email);
 
   if (user) {

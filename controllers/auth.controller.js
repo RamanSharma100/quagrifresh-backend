@@ -10,6 +10,10 @@ const { sendMail } = require("../helpers/mail.helper");
 const login = async (req, res) => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    return res.status(400).json({ msg: "Please fill in all fields!" });
+  }
+
   // Check if user exists
   const user = await findByEmail(email);
   console.log(user);
@@ -41,10 +45,35 @@ const login = async (req, res) => {
 const register = async (req, res) => {
   const { name, email, password, type, loginMedium } = req.body;
 
+  if (!name || !email || !password || !type || !loginMedium) {
+    return res.status(400).json({ msg: "Please fill in all fields!" });
+  }
+
+  // email validation
+  const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/g;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ msg: "Invalid email!" });
+  }
+
   // Check if user already exists
   const oldUser = await findByEmail(email);
   if (oldUser) {
     return res.status(400).json({ msg: "User already exists", oldUser });
+  }
+  // validate password length
+  if (password.length < 8) {
+    return res
+      .status(400)
+      .json({ msg: "Password should be atleast 8 characters long!" });
+  }
+
+  // validate password has one uppercase, one lowercase, one number and one special character
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/g;
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      msg: "Password should have atleast one uppercase, one lowercase, one number and one special character!",
+    });
   }
 
   let pass = password;
@@ -108,6 +137,14 @@ const register = async (req, res) => {
 const resetPassword = async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ msg: "No token provided!" });
+  }
+
+  if (!password) {
+    return res.status(400).json({ msg: "Please enter a new password!" });
+  }
 
   // Check if token is valid
   const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
