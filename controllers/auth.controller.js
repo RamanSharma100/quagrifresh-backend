@@ -1,6 +1,10 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const { findByEmail, createDocument } = require("../models/auth-cloudant");
+const {
+  findByEmail,
+  createDocument,
+  updateDocument,
+} = require("../models/auth-cloudant");
 const { sendMail } = require("../helpers/mail.helper");
 
 const login = async (req, res) => {
@@ -101,7 +105,69 @@ const register = async (req, res) => {
   return res.status(200).json({ msg: "User created successfully", user });
 };
 
+const resetPassword = async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  // Check if token is valid
+  const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+  if (!decoded) {
+    return res.status(400).json({ msg: "Invalid token" });
+  }
+
+  // Check if user exists
+  const user = await findByEmail(decoded.email);
+
+  if (!user) {
+    return res.status(404).json({ msg: "User does not exist!" });
+  }
+
+  if (user.doc.loginMedium !== "email") {
+    return res.status(400).json({
+      msg: "You cannot reset password for this account as you are loggedin with OAuth!",
+    });
+  }
+
+  if (!password) {
+    return res.status(400).json({ msg: "Please fill in all fields!" });
+  }
+  // Hash password
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = bcrypt.hash(password, salt);
+
+  // Update password
+  user.doc.password = hashedPassword;
+
+  const updatedUser = await updateDocument(user.doc);
+
+  if (!updatedUser) {
+    return res.status(400).json({ msg: "Something went wrong" });
+  }
+
+  // send email to user for password reset
+  const html = `
+    <h1>Password reset successful</h1>
+    <p>Your password has been reset successfully</p>
+    <br/>
+    <p>If you did not reset your password, please contact us immediately</p>
+    `;
+
+  const subject = "Password reset successful";
+
+  try {
+    await sendMail(user.doc.email, subject, html);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ msg: "Something went wrong" });
+  }
+
+  return res
+    .status(200)
+    .json({ msg: "Password updated successfully!", user: updatedUser.doc });
+};
+
 module.exports = {
   login,
   register,
+  resetPassword,
 };
