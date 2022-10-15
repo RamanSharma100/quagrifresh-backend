@@ -95,6 +95,8 @@ const register = async (req, res) => {
     latitude: 0.0,
     history: [],
     isVerified: false,
+    rating: [],
+    avatar: "",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

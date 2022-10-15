@@ -11,7 +11,7 @@ function getAllDocuments() {
   return new Promise((resolve, reject) => {
     client
       .postAllDocs({
-        db: "quagrifresh_auth",
+        db: "quagrifresh_products",
         includeDocs: true,
       })
       .then((response) => {
@@ -22,21 +22,29 @@ function getAllDocuments() {
       });
   });
 }
-const findById = async (id) => {
-  const allDocuments = await getAllDocuments();
 
-  const document = allDocuments.rows.find((row) => row.doc._id === id);
+function getDocument(id) {
+  return new Promise((resolve, reject) => {
+    const client = new CloudantV1({
+      authenticator: new IamAuthenticator({
+        apikey: credentials.services.cloudantNoSQLDB.credentials.apikey,
+      }),
+      serviceUrl: credentials.services.cloudantNoSQLDB.credentials.url,
+    });
 
-  return document;
-};
-
-const findByEmail = async (email) => {
-  const allDocuments = await getAllDocuments();
-
-  const document = allDocuments.rows.find((row) => row.doc.email === email);
-
-  return document;
-};
+    client
+      .getDocument({
+        db: "quagrifresh_products",
+        docId: id,
+      })
+      .then((response) => {
+        resolve(response.result);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
 
 function createDocument(document) {
   return new Promise((resolve, reject) => {
@@ -49,7 +57,7 @@ function createDocument(document) {
 
     client
       .postDocument({
-        db: "quagrifresh_auth",
+        db: "quagrifresh_products",
         document: document,
       })
       .then((response) => {
@@ -72,7 +80,7 @@ function updateDocument(document) {
 
     client
       .putDocument({
-        db: "quagrifresh_auth",
+        db: "quagrifresh_products",
         docId: document._id,
         document: document,
       })
@@ -87,8 +95,7 @@ function updateDocument(document) {
 
 module.exports = {
   getAllDocuments,
-  findById,
-  findByEmail,
+  getDocument,
   createDocument,
   updateDocument,
 };
