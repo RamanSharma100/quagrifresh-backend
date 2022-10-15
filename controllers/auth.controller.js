@@ -149,7 +149,12 @@ const resetPassword = async (req, res) => {
   }
 
   // Check if token is valid
-  const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+  } catch (err) {
+    return res.status(400).json({ msg: "Invalid token or expired!" });
+  }
   if (!decoded) {
     return res.status(400).json({ msg: "Invalid token" });
   }
@@ -172,7 +177,7 @@ const resetPassword = async (req, res) => {
   }
   // Hash password
   const salt = await bcrypt.genSalt(10);
-  const hashedPassword = bcrypt.hash(password, salt);
+  const hashedPassword = await bcrypt.hash(password, salt);
 
   // Update password
   user.doc.password = hashedPassword;
