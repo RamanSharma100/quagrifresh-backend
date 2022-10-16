@@ -11,6 +11,7 @@ app.use(morgan("dev"));
 
 // add cors
 app.use(cors());
+app.use("/uploads", express.static("uploads"));
 
 // add body parser
 app.use(bodyParser.json());

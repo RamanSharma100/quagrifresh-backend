@@ -86,8 +86,10 @@ function updateDocument(document) {
       })
       .then((response) => {
         resolve(response.result);
+        console.log(response.result);
       })
       .catch((err) => {
+        console.log(err);
         reject(err);
       });
   });
