@@ -16,14 +16,12 @@ const login = async (req, res) => {
 
   // Check if user exists
   const user = await findByEmail(email);
-  console.log(user);
   if (!user) {
     return res.status(400).json({ msg: "Invalid Email/Password!" });
   }
 
   // Check if password is correct
   const isMatch = await bcrypt.compare(password, user.doc.password);
-  console.log(isMatch);
   if (!isMatch) {
     return res.status(400).json({ msg: "invalid Email/Password!" });
   }
@@ -39,7 +37,17 @@ const login = async (req, res) => {
     },
     process.env.TOKEN_SECRET
   );
-  res.status(200).json({ token, user, msg: "Logged in successfully" });
+  res.status(200).json({
+    token,
+    user: {
+      _id: user.id,
+      name: user.doc.name,
+      email: user.doc.email,
+      type: user.doc.type,
+      loginMedium: user.doc.loginMedium,
+    },
+    msg: "Logged in successfully",
+  });
 };
 
 const register = async (req, res) => {
@@ -58,7 +66,7 @@ const register = async (req, res) => {
   // Check if user already exists
   const oldUser = await findByEmail(email);
   if (oldUser) {
-    return res.status(400).json({ msg: "User already exists", oldUser });
+    return res.status(400).json({ msg: "User already exists" });
   }
   // validate password length
   if (password.length < 8) {
@@ -124,7 +132,9 @@ const register = async (req, res) => {
     await sendMail(newUser.email, subject, html);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ msg: "Something went wrong" });
+    return res
+      .status(500)
+      .json({ msg: "Something went wrong but you can login!" });
   }
 
   // Save user to database
@@ -133,7 +143,7 @@ const register = async (req, res) => {
     return res.status(400).json({ msg: "Something went wrong" });
   }
 
-  return res.status(200).json({ msg: "User created successfully", user });
+  return res.status(200).json({ msg: "User registered successfully!" });
 };
 
 const resetPassword = async (req, res) => {

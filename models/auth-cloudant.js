@@ -1,11 +1,10 @@
-const credentials = require("../config/vcap-local.json");
 const { CloudantV1, IamAuthenticator } = require("@ibm-cloud/cloudant");
 function getAllDocuments() {
   const client = new CloudantV1({
     authenticator: new IamAuthenticator({
-      apikey: credentials.services.cloudantNoSQLDB.credentials.apikey,
+      apikey: process.env.CLOUDANT_API_KEY,
     }),
-    serviceUrl: credentials.services.cloudantNoSQLDB.credentials.url,
+    serviceUrl: process.env.CLOUDANT_URL,
   });
 
   return new Promise((resolve, reject) => {
@@ -42,9 +41,9 @@ function createDocument(document) {
   return new Promise((resolve, reject) => {
     const client = new CloudantV1({
       authenticator: new IamAuthenticator({
-        apikey: credentials.services.cloudantNoSQLDB.credentials.apikey,
+        apikey: process.env.CLOUDANT_API_KEY,
       }),
-      serviceUrl: credentials.services.cloudantNoSQLDB.credentials.url,
+      serviceUrl: process.env.CLOUDANT_URL,
     });
 
     client
@@ -65,9 +64,9 @@ function updateDocument(document) {
   return new Promise((resolve, reject) => {
     const client = new CloudantV1({
       authenticator: new IamAuthenticator({
-        apikey: credentials.services.cloudantNoSQLDB.credentials.apikey,
+        apikey: process.env.CLOUDANT_API_KEY,
       }),
-      serviceUrl: credentials.services.cloudantNoSQLDB.credentials.url,
+      serviceUrl: process.env.CLOUDANT_URL,
     });
 
     client

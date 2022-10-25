@@ -10,7 +10,7 @@ const { checkAuth, checkSeller } = require("../middlewares");
 
 router.post("/create", checkAuth, createCart);
 router.get("/get/:cartId", checkAuth, getCart);
-router.put("/update/:cartId", checkAuth, updateCart);
-router.delete("/delete/:cartId", checkAuth, deleteCart);
+router.post("/update/:cartId", checkAuth, updateCart);
+router.post("/delete/:cartId", checkAuth, deleteCart);
 
 module.exports = router;
