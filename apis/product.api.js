@@ -6,6 +6,8 @@ const {
   createProduct,
   getProducts,
   getProduct,
+  updateProduct,
+  deleteProduct,
 } = require("../controllers/product.controller");
 const upload = require("../middlewares/multer.middleware");
 
@@ -18,5 +20,7 @@ router.post(
   upload.array("images"),
   createProduct
 );
+router.post("/update/:id", checkAuth, checkSeller, updateProduct);
+router.post("/delete/:id", checkAuth, checkSeller, deleteProduct);
 
 module.exports = router;

@@ -7,12 +7,14 @@ const checkSeller = (req, res, next) => {
     req.userData = decoded;
 
     if (decoded.type !== "seller") {
+      console.log("Not a seller");
       return res.status(401).json({
         message: "Please create seller account to perform this action!",
       });
     }
     next();
   } catch (err) {
+    console.log(err);
     return res.status(401).json({
       message: "Please login first!",
     });

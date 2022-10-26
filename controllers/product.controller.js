@@ -71,7 +71,12 @@ const createProduct = async (req, res) => {
         })
     );
     const results = await Promise.all(promises);
-    product.images = results;
+    // extract secure_url from results
+    const images = results.map((result) => ({
+      secure_url: result.secure_url,
+      original_filename: result.original_filename,
+    }));
+    product.images = images;
     product._id = newProduct.id;
     product._rev = newProduct.rev;
 
@@ -92,8 +97,106 @@ const createProduct = async (req, res) => {
   }
 };
 
+const updateProduct = async (req, res) => {
+  const { id } = req.params;
+  const {
+    name,
+    price,
+    stock,
+    description,
+    inStock,
+    category,
+    colors,
+    left,
+    sold,
+    views,
+    rating,
+    buyers,
+    productBy,
+  } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ msg: "Invalid request!" });
+  }
+
+  if (!name || !price || !description || !category || !stock || !colors) {
+    return res.status(400).json({ msg: "Please enter all fields!" });
+  }
+
+  let product;
+  try {
+    product = await getDocument(id);
+  } catch (err) {
+    return res.status(500).json({ err, msg: "Error retrieving product!" });
+  }
+
+  // check if product by user
+  if (product.productBy !== productBy) {
+    return res
+      .status(400)
+      .json({ msg: "You are not authorized to update this product!" });
+  }
+
+  // update product
+  product.name = name;
+  product.price = price;
+  product.description = description;
+  product.colors = colors;
+  product.category = category;
+  product.stock = stock;
+  product.left = left;
+  product.sold = sold;
+  product.views = views;
+  product.rating = rating;
+  product.inStock = inStock;
+  product.buyers = buyers;
+
+  try {
+    const updatedProduct = await updateDocument(product);
+    return res
+      .status(200)
+      .json({ product: updatedProduct, msg: "Product updated successfully!" });
+  } catch (err) {
+    res.status(500).json({ err, msg: "Error updating product!" });
+  }
+};
+
+const deleteProduct = async (req, res) => {
+  const { id } = req.params;
+  const { productBy } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ msg: "Invalid request!" });
+  }
+
+  let product;
+  try {
+    product = await getDocument(id);
+  } catch (err) {
+    return res.status(500).json({ err, msg: "Error retrieving product!" });
+  }
+
+  // check if product by user
+  if (product.productBy !== productBy) {
+    return res
+      .status(400)
+      .json({ msg: "You are not authorized to delete this product!" });
+  }
+
+  try {
+    const deletedProduct = await deleteDocument(product);
+    return res
+      .status(200)
+      .json({ product: deletedProduct, msg: "Product deleted successfully!" });
+  } catch (err) {
+    res.status(500).json({ err, msg: "Error deleting product!" });
+  }
+};
+
 module.exports = {
   getProducts,
   getProduct,
   createProduct,
+  updateProduct,
+  deleteProduct,
 };
