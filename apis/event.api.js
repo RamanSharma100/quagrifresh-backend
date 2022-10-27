@@ -9,7 +9,7 @@ const {
   deleteEvent,
 } = require("../controllers/event.controller");
 
-router.get("/get/all", getAllEvents);
+router.get("/all/get", getAllEvents);
 router.get("/get/:id", getEvent);
 router.post("/create", checkAuth, checkSeller, createEvent);
 router.post("/update/:id", checkAuth, checkSeller, updateEvent);
