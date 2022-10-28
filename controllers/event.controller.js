@@ -180,6 +180,7 @@ const updateEvent = async (req, res) => {
 
 const deleteEvent = async (req, res) => {
   const { id } = req.params;
+  const { eventBy } = req.body;
 
   if (!id) {
     return res.status(400).json({ msg: "Invalid Request!" });
@@ -191,7 +192,7 @@ const deleteEvent = async (req, res) => {
     return res.status(400).json({ msg: "Event not found!" });
   }
 
-  if (oldEvent.eventBy !== req.userData._id) {
+  if (oldEvent.eventBy !== eventBy) {
     return res
       .status(400)
       .json({ msg: "You are not authorized to edit this event!" });
