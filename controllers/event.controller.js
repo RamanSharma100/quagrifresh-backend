@@ -1,3 +1,5 @@
+const { uploadImage } = require("../helpers/cloudinary.helper");
+const fs = require("fs");
 const {
   createDocument,
   getAllDocuments,
@@ -27,8 +29,16 @@ const getEvent = async (req, res) => {
 };
 
 const createEvent = async (req, res) => {
-  const { title, description, startDate, endDate, deliveryDate, deliveryCost } =
-    req.body;
+  const {
+    title,
+    description,
+    startDate,
+    endDate,
+    deliveryDate,
+    deliveryCost,
+    products,
+    eventBy,
+  } = req.body;
 
   if (
     !title ||
@@ -36,7 +46,8 @@ const createEvent = async (req, res) => {
     !startDate ||
     !endDate ||
     !deliveryDate ||
-    !deliveryCost
+    !deliveryCost ||
+    !products
   ) {
     return res.status(400).json({ msg: "Please fill in all fields!" });
   }
@@ -49,13 +60,54 @@ const createEvent = async (req, res) => {
     endDate,
     deliveryDate,
     deliveryCost,
-    products: [],
+    products: typeof products === "string" ? products.split(",") : products,
+    eventBy,
     buyers: [],
-    eventBy: req.userData._id,
+    images: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
-  const event = await createDocument(data);
-  return res.status(200).json({ event, msg: "Event created successfully" });
+  try {
+    const newEvent = await createDocument(data);
+    // upload images to cloudinary with promises
+    const promises = req.files.map(
+      (file) =>
+        new Promise((resolve, reject) => {
+          uploadImage(file.path, newEvent.id, "quagrifresh_events")
+            .then((result) => {
+              resolve(result);
+            })
+            .catch((err) => {
+              reject(err);
+            });
+        })
+    );
+    const results = await Promise.all(promises);
+    // extract secure_url from results
+    const images = results.map((result) => ({
+      secure_url: result.secure_url,
+      original_filename: result.original_filename,
+    }));
+    data.images = images;
+    data._id = newEvent.id;
+    data._rev = newEvent.rev;
+
+    const updatedEvent = await updateDocument(data);
+
+    // delete files from server
+    req.files.forEach((file) => {
+      fs.unlinkSync(file.path);
+    });
+
+    res.status(201).json({
+      event: { id: newEvent.id, rev: newEvent.rev, doc: data },
+      msg: "Event created successfully!",
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ err, msg: "Error creating event!" });
+  }
 };
 
 const updateEvent = async (req, res) => {
@@ -69,6 +121,7 @@ const updateEvent = async (req, res) => {
     deliveryCost,
     products,
     buyers,
+    eventBy,
   } = req.body;
 
   if (!id) {
@@ -81,7 +134,7 @@ const updateEvent = async (req, res) => {
     return res.status(400).json({ msg: "Event not found!" });
   }
 
-  if (oldEvent.eventBy !== req.userData._id) {
+  if (oldEvent.eventBy !== eventBy) {
     return res
       .status(400)
       .json({ msg: "You are not authorized to edit this event!" });
@@ -112,7 +165,8 @@ const updateEvent = async (req, res) => {
     deliveryCost,
     products,
     buyers,
-    eventBy: req.userData._id,
+    eventBy,
+    images: oldEvent.images,
   };
 
   const event = await updateDocument(data);
