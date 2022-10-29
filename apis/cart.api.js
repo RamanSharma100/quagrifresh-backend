@@ -9,7 +9,7 @@ const {
 const { checkAuth, checkSeller } = require("../middlewares");
 
 router.post("/create", checkAuth, createCart);
-router.get("/get/:cartId", checkAuth, getCart);
+router.get("/get/:userId", checkAuth, getCart);
 router.post("/update/:cartId", checkAuth, updateCart);
 router.post("/delete/:cartId", checkAuth, deleteCart);
 

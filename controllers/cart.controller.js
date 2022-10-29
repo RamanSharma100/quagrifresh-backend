@@ -7,41 +7,32 @@ const {
 } = require("../models/cart-cloudant");
 
 const createCart = async (req, res) => {
-  const { items, eventCart, event } = req.body;
+  const { cartItems, checkedOut, cartTotal, cartTotalQuantity, userId } =
+    req.body;
 
-  if (!items || !eventCart || !event) {
+  if (!cartItems || !cartTotal || !cartTotalQuantity) {
     return res
       .status(400)
       .json({ message: "Please provide all required fields!" });
   }
 
-  const userId = req.user._id;
-
   // check if items are empty
-  if (items.length === 0) {
+  if (cartItems.length === 0) {
     return res.status(400).json({ message: "Please provide items!" });
   }
 
-  // calculate total
-  let total = 0;
-  items.map((item) => {
-    total += item.price * item.quantity;
-  });
-
   // create cart
   const cart = {
-    total,
-    items,
-    eventCart,
-    event,
+    cartItems,
+    checkedOut,
+    cartTotal,
+    cartTotalQuantity,
     createdBy: userId,
   };
 
   try {
     const newCart = await createDocument(cart);
-    res
-      .status(201)
-      .json({ msg: "Cart created Successfully!", cart: newCart.doc });
+    res.status(201).json({ msg: "Cart created Successfully!", cart: newCart });
   } catch (err) {
     console.log(err);
     res.status(500).json({ msg: "Something went wrong!" });
@@ -64,19 +55,22 @@ const getCart = async (req, res) => {
     res.status(500).json({ msg: "Cart not found!!" });
   }
 
-  return res.status(200).json({ cart, msg: "Cart found!" });
+  return res.status(200).json({ cart: cart.docs[0], msg: "Cart found!" });
 };
 
 const updateCart = async (req, res) => {
-  const { items } = req.body;
+  const { cartItems, checkedOut, cartTotal, cartTotalQuantity, userId } =
+    req.body;
   const { cartId } = req.params;
 
   if (!cartId) {
     return res.status(400).json({ msg: "Invalid Request!" });
   }
 
-  if (!items) {
-    return res.status(400).json({ msg: "Please provide items!" });
+  if (!cartItems || !cartTotal || !cartTotalQuantity) {
+    return res
+      .status(400)
+      .json({ message: "Please provide all required fields!" });
   }
 
   // find cart
@@ -88,16 +82,30 @@ const updateCart = async (req, res) => {
     return res.status(500).json({ msg: "Cart not found!" });
   }
 
-  return res.status(200).json({ cart, msg: "Cart found!" });
-  // calculate total
-  let total = 0;
-  items.forEach((item) => {
-    total += item.price * item.quantity;
-  });
+  if (cart.createdBy !== userId) {
+    return res.status(401).json({ msg: "Unauthorized!" });
+  }
 
   // update cart
-  cart.items = items;
-  cart.total += total;
+  const updatedCart = {
+    cartItems,
+    checkedOut,
+    cartTotal,
+    cartTotalQuantity,
+    createdBy: userId,
+    _id: cart._id,
+    _rev: cart._rev,
+  };
+
+  try {
+    const updateCart = await updateDocument(updatedCart);
+    res
+      .status(201)
+      .json({ msg: "Cart updated Successfully!", cart: updatedCart });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ msg: "Something went wrong!" });
+  }
 };
 
 const deleteCart = async (req, res) => {
