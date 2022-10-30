@@ -3,6 +3,11 @@ const {
   findDocumentById: findCartById,
   updateDocument: updateCartDocument,
 } = require("../models/cart-cloudant");
+const { findById: findUserById } = require("../models/auth-cloudant");
+const {
+  getAllDocuments: getAllProducts,
+} = require("../models/product-cloudant");
+
 const { v4: uuidv4 } = require("uuid");
 
 const createOrder = async (req, res) => {
@@ -164,6 +169,42 @@ const getOrder = async (req, res) => {
   res.status(200).json({ msg: "Order get api!", orderId });
 };
 
+const getMyOrder = async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ msg: "Invalid Request!" });
+  }
+
+  const user = await findUserById(userId);
+  const allOrders = await getAllDocuments();
+  const products = await getAllProducts();
+
+  if (user.doc.type === "seller") {
+    const myOrders = allOrders.rows.filter((order) => {
+      const orderItems = order.doc.cartItems.filter((item) => {
+        const product = products.rows.find((product) => {
+          return product.doc._id === item.product;
+        });
+        if (product.doc.productBy === userId) {
+          return item;
+        }
+      });
+      if (orderItems.length > 0) {
+        return order.doc;
+      }
+    });
+    return res.status(200).json({ myOrders, msg: "My Orders!" });
+  } else {
+    const myOrders = allOrders.rows.filter((order) => {
+      if (order.doc.userId === userId) {
+        return order.doc;
+      }
+    });
+    return res.status(200).json({ myOrders, msg: "My Orders!" });
+  }
+};
+
 const updateOrder = async (req, res) => {
   const { orderId } = req.params;
 
@@ -178,4 +219,5 @@ module.exports = {
   deleteOrder,
   getOrder,
   updateOrder,
+  getMyOrder,
 };
