@@ -81,7 +81,7 @@ const updateUser = async (req, res) => {
       .json({ message: "Could not find user for the provided id." });
   }
 
-  const { name, email, phone, address } = req.body;
+  const { name, email, phone, address, long, lat } = req.body;
 
   if (!name) {
     return res.status(400).json({ message: "Name Required" });
@@ -96,6 +96,8 @@ const updateUser = async (req, res) => {
   updatedUser.email = email;
   updatedUser.phone = phone;
   updatedUser.address = address;
+  updatedUser.longitude = long;
+  updatedUser.latitude = lat;
   updatedUser.updatedAt = new Date().toISOString();
 
   try {

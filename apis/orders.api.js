@@ -8,7 +8,7 @@ const {
 } = require("../controllers/orders.controller");
 const { checkAuth, checkSeller } = require("../middlewares");
 
-router.post("/create/:cartId", checkAuth, createOrder);
+router.post("/create", checkAuth, createOrder);
 router.post("/delete/:orderId", checkAuth, deleteOrder);
 router.get("/get/:orderId", checkAuth, getOrder);
 router.put("/update/:orderId", checkAuth, updateOrder);
