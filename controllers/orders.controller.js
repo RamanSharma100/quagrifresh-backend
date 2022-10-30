@@ -189,7 +189,9 @@ const createOrder = async (req, res) => {
               <tr>
                 <td>${item.name}</td>
                 <td>${item.quantity}</td>
-                <td>${item.price}</td>
+                <td>$ ${Math.floor(
+                  parseFloat(item.price) * parseInt(item.quantity)
+                )}</td>
               </tr>
             `;
             })
