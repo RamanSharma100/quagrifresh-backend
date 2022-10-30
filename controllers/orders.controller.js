@@ -8,6 +8,8 @@ const {
   getAllDocuments: getAllProducts,
 } = require("../models/product-cloudant");
 
+const { sendMail } = require("../helpers/mail.helper");
+
 const { v4: uuidv4 } = require("uuid");
 
 const createOrder = async (req, res) => {
@@ -138,6 +140,74 @@ const createOrder = async (req, res) => {
     // update cart
     try {
       await updateCartDocument(cart);
+
+      // send mail
+
+      const html = `
+      <h1>Order Placed</h1>
+      <p>Hi ${user.doc.name},</p>
+
+      <p>Thank you for placing your order with us. Your order details are as follows:</p>
+
+      <p>Order ID: ${order.doc._id}</p>
+      <p>Order Date: ${order.doc.createdDate}</p>
+      <p>Order Total: ${order.doc.orderTotal}</p>
+      <p>Delivery Cost: ${order.doc.deliveryCost}</p>
+      <p>Order Status: ${order.doc.status}</p>
+
+      <p>Shipping Address:</p>
+      <p>${order.doc.shippingAddress.address}</p>
+      <p>${order.doc.shippingAddress.city}</p>
+      <p>${order.doc.shippingAddress.state}</p>
+      <p>${order.doc.shippingAddress.country}</p>
+      <p>${order.doc.shippingAddress.pincode}</p>
+      <p>${order.doc.shippingAddress.phone}</p>
+
+      <p>Billing Address:</p>
+      <p>${order.doc.billingAddress.address}</p>
+      <p>${order.doc.billingAddress.city}</p>
+      <p>${order.doc.billingAddress.state}</p>
+      <p>${order.doc.billingAddress.country}</p>
+      <p>${order.doc.billingAddress.pincode}</p>
+      <p>${order.doc.billingAddress.phone}</p>
+
+      <p>Order Items:</p>
+      <table>
+        <thead>
+
+          <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${order.doc.cartItems
+
+            .map((item) => {
+              return `
+              <tr>
+                <td>${item.name}</td>
+                <td>${item.quantity}</td>
+                <td>${item.price}</td>
+              </tr>
+            `;
+            })
+            .join("")}
+        </tbody>
+      </table>
+
+      <p>Thank you for shopping with us.</p>
+      <p>Regards,</p>
+      <p>Team Ecommerce</p>
+    `;
+
+      sendMail({
+        to: user.doc.email,
+        subject: "Order Placed",
+        html,
+      });
+
       return res
         .status(201)
         .json({ order, msg: "Order created successfully!" });
